@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <!-- Firebase Reference -->
+    <script src="https://www.gstatic.com/firebasejs/live/3.0/firebase.js"></script>
+    <script src="http://momentjs.com/downloads/moment.js"></script>
+</head>
+<body>
+  <div class="container">
+    
+    <div class="jumbotron text-center">
+      
+      <h1>Anytime is Train Time</h1>
+
+      <p>Choo Choo. Chee Chee.</p>
+
+    </div>
+
+
+    <div class="panel-primary">
+        
+      <div class="panel-heading"><strong>Current Train Schedule</strong></div>
+
+
+      <div class="panel-body">  
+
+        <table class="table table-hover">
+            
+          <thead>
+            <tr>        
+              <td>Train Name</td>
+              <td>Destination</td>
+              <td>Frequency (min)</td>
+              <td>Next Arrival</td>
+              <td>Minutes Away</td>       
+            </tr>
+          </thead>
+
+        </table>
+
+      </div>  
+    </div>
+
+    <div class="panel-primary">
+        
+      <div class="panel-heading"><strong>Add Train</strong></div>
+
+    </div>
+
+    <div class="panel-body">
+
+      <div class="form-group">
+        <label for="train-name-input">Train Name</label>
+        <input class="form-control" id = "train-name-input" type="text">
+      </div>
+      <div class="form-group">
+        <label for="destination-input">Destination</label>
+        <input class="form-control" id = "destination-input" type="text">
+      </div>
+      <div class="form-group">
+        <label for="first-train-input">First Train Time <em style="font-weight:normal">(HH:mm - military time)</em></label>
+        <input class="form-control" id = "first-train-input" type="text">
+      </div>
+      <div class="form-group">
+        <label for="frequency-input">Frequency (min)</label>
+        <input class="form-control" id = "frequency-input" type="number" step=>
+      </div>
+      <button type="button" class="btn btn-primary">Submit</button>
+    </div>
+
+  </div>
+
+  
+<script src="https://www.gstatic.com/firebasejs/4.3.1/firebase.js"></script>
+<script>
+  // Initialize Firebase
+  var config = {
+    apiKey: "AIzaSyB3hpJ3dp_uHGJLzDFC1iNap8Zoi1kYF3w",
+    authDomain: "trainscheduler-af9ae.firebaseapp.com",
+    databaseURL: "https://trainscheduler-af9ae.firebaseio.com",
+    projectId: "trainscheduler-af9ae",
+    storageBucket: "trainscheduler-af9ae.appspot.com",
+    messagingSenderId: "1093670479793"
+  };
+  firebase.initializeApp(config);
+
+
+    var dB = firebase.database();
+    var trainNames = [];
+
+    $("button").on("click",function(){
+
+      if(validateTime($("#first-train-input").val())&&!trainNames.includes($("#train-name-input").val())){
+        var newEmp = {
+          "empName" : $("#train-name-input").val(),
+          "Role" : $("#destination-input").val(),
+          "startDate" :$("#first-train-input").val(),
+          "Rate" : $("#monthly-rate-input").val()
+        };
+        console.log(newEmp);
+        dB.ref().push(newEmp);
+        trainNames.push($("#train-name-input").val());
+      } else {
+        alert("Time must be Military Time or Standard Time.");
+      }
+
+    })
+
+    dB.ref().on("child_added",function(ChildSnapshot,prevChildKey){
+      var startDateParsed = moment(ChildSnapshot.val().startDate);
+      var today = moment(new Date());
+      var MonthsWorked = today.diff(startDateParsed,"months");
+      var TotalBilled = MonthsWorked * ChildSnapshot.val().Rate;
+
+      $("table").append("<tr><td>"+ChildSnapshot.val().empName+"</td><td>"+ChildSnapshot.val().Role+"</td><td>"+ChildSnapshot.val().startDate+"</td><td>"+MonthsWorked+"</td><td>"+ChildSnapshot.val().Rate+"</td><td>"+TotalBilled+"</td></tr>");
+    });
+
+    function isValidDate(dateString)
+    {
+        // First check for the pattern
+        if(!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateString))
+            return false;
+
+       // Parse the date parts to integers
+        var parts = dateString.split("/");
+        var day = parseInt(parts[1], 10);
+        var month = parseInt(parts[0], 10);
+        var year = parseInt(parts[2], 10);
+
+       // Check the ranges of month and year
+        if(year < 1000 || year > 3000 || month == 0 || month > 12)
+            return false;
+
+       var monthLength = [ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 ];
+
+       // Adjust for leap years
+        if(year % 400 == 0 || (year % 100 != 0 && year % 4 == 0))
+            monthLength[1] = 29;
+
+       // Check the range of the day
+        return day > 0 && day <= monthLength[month - 1];
+    };
+    // Validates if input is Military or Standard Time
+  function validateTime(time) {
+    if (!time) {
+        return false;
+    }
+    var military = /^\s*([01]?\d|2[0-3]):[0-5]\d\s*$/i;
+    var standard = /^\s*(0?\d|1[0-2]):[0-5]\d(\s+(AM|PM))?\s*$/i;
+    return time.match(military) || time.match(standard);
+}
+
+
+
+  </script>
+
+</body>
+</html>
